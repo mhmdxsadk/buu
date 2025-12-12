@@ -1,5 +1,6 @@
 use std::process::Command;
 use owo_colors::OwoColorize;
+use clap::Parser;
 
 type Result<T> = anyhow::Result<T>;
 
@@ -45,7 +46,12 @@ impl BrewContext {
     }
 }
 
+#[derive(Parser)]
+#[command(name = "buu", version, about = "Update, upgrade, and clean Homebrew in one command.")]
+struct Cli {}
+
 fn main() -> Result<()> {
+    let _cli = Cli::parse();
     let ctx = BrewContext::detect()?;
 
     let steps = [
