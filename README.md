@@ -1,7 +1,6 @@
-# buu
+# BUU
 
-**buu** is a small, fast Rust-powered CLI tool that updates, upgrades, and cleans your Homebrew installation in one clean and satisfying command.  
-It runs `brew update`, `brew upgrade`, and `brew cleanup -s` with pretty output, color formatting, and smart detection of whether anything actually changed.
+**buu** is a small, fast Rust-powered CLI tool that updates, upgrades, and cleans your Homebrew installation in one clean and satisfying command. It runs `brew update`, `brew upgrade`, and `brew cleanup -s` with pretty presentation layer on top of it.
 
 ---
 
@@ -9,10 +8,6 @@ It runs `brew update`, `brew upgrade`, and `brew cleanup -s` with pretty output,
 
 - Single command to maintain Homebrew
 - Colored, human-friendly output
-- Shows real Homebrew output only when something changes
-- Collapses “no updates” into a clean `No changes.` message
-- Removes noisy Homebrew headers for a cleaner experience
-- Written in modern, idiomatic Rust
 
 ---
 
@@ -40,14 +35,6 @@ What it does:
 1. **Update** Homebrew
 2. **Upgrade** outdated packages (formulae + casks)
 3. **Clean up** old artifacts
-
-Output automatically adapts:
-
-- If a step changes something → prints meaningful Homebrew output
-- If nothing happened → prints
-  ```
-  No changes.
-  ```
 
 ---
 
@@ -77,5 +64,4 @@ I know I could have pulled this off with a simple bash script — but where’s 
 
 ## License
 
-This project is licensed under the MIT License.  
-See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
