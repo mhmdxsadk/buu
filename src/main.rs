@@ -59,7 +59,7 @@ fn main() -> Result<()> {
     for (idx, step) in steps.iter().copied().enumerate() {
         print_step_header(idx + 1, total, step.label());
         step.run(&ctx)?;
-        println!(); // blank line between steps for readability
+        println!();
     }
 
     Ok(())
@@ -98,20 +98,16 @@ fn run_update() -> Result<()> {
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
 
-    // Collect all lines from stdout + stderr.
     let mut lines: Vec<String> = stdout
         .lines()
         .chain(stderr.lines())
         .map(|l| l.trim_end().to_string())
         .collect();
 
-    // Strip Homebrew's own header; we already show a prettier one.
     lines.retain(|line| !line.starts_with("==> Updating Homebrew"));
 
-    // Strip empty lines.
     lines.retain(|line| !line.trim().is_empty());
 
-    // If nothing is left or only "Already up-to-date.", treat as no changes.
     let only_already_up_to_date =
         !lines.is_empty() && lines.iter().all(|l| l.trim() == "Already up-to-date.");
 
@@ -120,7 +116,6 @@ fn run_update() -> Result<()> {
         return Ok(());
     }
 
-    // Something actually happened: print the remaining lines as stdout.
     let joined = lines.join("\n");
     print_stdout_block(&joined);
 
@@ -148,7 +143,6 @@ fn run_upgrade(ctx: &BrewContext) -> Result<()> {
     let stderr_trimmed = stderr.trim();
 
     if stdout_trimmed.is_empty() && stderr_trimmed.is_empty() {
-        // Extremely unlikely, but be conservative.
         print_no_changes();
         return Ok(());
     }
