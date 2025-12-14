@@ -36,6 +36,7 @@ struct BrewContext {
 impl BrewContext {
     fn detect() -> Result<Self> {
         let output = Command::new("brew")
+            .env("HOMEBREW_NO_AUTO_UPDATE", "1")
             .args(["outdated", "--quiet"])
             .output()?;
 
