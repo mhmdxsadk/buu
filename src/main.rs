@@ -20,30 +20,12 @@ impl BrewStep {
         }
     }
 
-    fn run(self, ctx: &BrewContext) -> Result<()> {
+    fn run(self) -> Result<()> {
         match self {
             BrewStep::Update => run_update(),
-            BrewStep::Upgrade => run_upgrade(ctx),
+            BrewStep::Upgrade => run_upgrade(),
             BrewStep::Cleanup => run_cleanup(),
         }
-    }
-}
-
-struct BrewContext {
-    is_outdated: bool,
-}
-
-impl BrewContext {
-    fn detect() -> Result<Self> {
-        let output = Command::new("brew")
-            .env("HOMEBREW_NO_AUTO_UPDATE", "1")
-            .args(["outdated", "--quiet"])
-            .output()?;
-
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        let is_outdated = !stdout.trim().is_empty();
-
-        Ok(Self { is_outdated })
     }
 }
 
@@ -53,7 +35,6 @@ struct Cli {}
 
 fn main() -> Result<()> {
     let _cli = Cli::parse();
-    let ctx = BrewContext::detect()?;
 
     let steps = [
         BrewStep::Update,
@@ -65,7 +46,7 @@ fn main() -> Result<()> {
 
     for (idx, step) in steps.iter().copied().enumerate() {
         print_step_header(idx + 1, total, step.label());
-        step.run(&ctx)?;
+        step.run()?;
         println!();
     }
 
@@ -129,8 +110,8 @@ fn run_update() -> Result<()> {
     Ok(())
 }
 
-fn run_upgrade(ctx: &BrewContext) -> Result<()> {
-    if !ctx.is_outdated {
+fn run_upgrade() -> Result<()> {
+    if !detect_outdated()? {
         print_no_changes();
         return Ok(());
     }
@@ -158,6 +139,16 @@ fn run_upgrade(ctx: &BrewContext) -> Result<()> {
     print_stderr_block(stderr_trimmed);
 
     Ok(())
+}
+
+fn detect_outdated() -> Result<bool> {
+    let output = Command::new("brew")
+        .env("HOMEBREW_NO_AUTO_UPDATE", "1")
+        .args(["outdated", "--quiet"])
+        .output()?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    Ok(!stdout.trim().is_empty())
 }
 
 fn run_cleanup() -> Result<()> {

@@ -1,9 +1,9 @@
 [package]
 name = "buu"
-version = "1.0.2"
+version = "1.0.3"
 edition = "2024"
 
 [dependencies]
-anyhow = "1.0.100"
-clap = { version = "4.5.53", features = ["derive"] }
+anyhow = "1.0.101"
+clap = { version = "4.5.57", features = ["derive"] }
 owo-colors = "4.2.3"
