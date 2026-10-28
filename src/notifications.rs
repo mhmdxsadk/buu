@@ -11,11 +11,24 @@ pub enum Message {
 }
 
 impl Message {
-    fn text(&self) -> String {
+    /// The notification's headline and its message.
+    ///
+    /// Neither says "buu": terminals such as Ghostty already show the tab
+    /// title, which is "buu" while buu runs.
+    fn text(&self) -> (String, String) {
         match self {
-            Message::Done => "Done".to_string(),
-            Message::Failed(step) => format!("Failed: {step}"),
-            Message::PasswordRequired => "Password required".to_string(),
+            Message::Done => (
+                "All done".to_string(),
+                "Homebrew is updated, upgraded and cleaned up.".to_string(),
+            ),
+            Message::Failed(step) => (
+                format!("Homebrew {step} failed"),
+                "Check the terminal for details.".to_string(),
+            ),
+            Message::PasswordRequired => (
+                "Password required".to_string(),
+                "Homebrew is waiting for your password.".to_string(),
+            ),
         }
     }
 }
@@ -37,7 +50,7 @@ struct Channel {
 enum Protocol {
     /// `OSC 777;notify;title;body`: Ghostty, WezTerm.
     Osc777,
-    /// `OSC 9;body`, which has no title: iTerm2.
+    /// `OSC 9;message`, which has no title: iTerm2.
     Osc9,
 }
 
@@ -56,16 +69,19 @@ impl Protocol {
         }
     }
 
-    fn sequence(self, message: &str) -> String {
+    fn sequence(self, title: &str, body: &str) -> String {
         // Keep notification text inside the payload, even if future callers
         // supply dynamic text containing terminal controls or field delimiters.
-        let message: String = message
-            .chars()
-            .filter(|ch| !ch.is_control() && *ch != ';')
-            .collect();
+        let clean = |text: &str| -> String {
+            text.chars()
+                .filter(|ch| !ch.is_control() && *ch != ';')
+                .collect()
+        };
+        let (title, body) = (clean(title), clean(body));
         match self {
-            Protocol::Osc777 => format!("\x1b]777;notify;buu;{message}\x07"),
-            Protocol::Osc9 => format!("\x1b]9;buu: {message}\x07"),
+            Protocol::Osc777 => format!("\x1b]777;notify;{title};{body}\x07"),
+            // iTerm2 shows no title of its own, so say who is speaking.
+            Protocol::Osc9 => format!("\x1b]9;buu: {title}. {body}\x07"),
         }
     }
 }
@@ -94,7 +110,8 @@ impl Notifications {
         let Some(channel) = &self.channel else {
             return;
         };
-        let sequence = channel.protocol.sequence(&message.text());
+        let (title, body) = message.text();
+        let sequence = channel.protocol.sequence(&title, &body);
         let result = match channel.stream {
             Stream::Stderr => write_notification(io::stderr().lock(), &sequence),
             Stream::Stdout => write_notification(io::stdout().lock(), &sequence),
@@ -113,8 +130,8 @@ impl Notifications {
         if let Some(channel) = &self.channel
             && env::var_os("SUDO_ASKPASS").is_none()
         {
-            let mut prompt =
-                OsString::from(channel.protocol.sequence(&Message::PasswordRequired.text()));
+            let (title, body) = Message::PasswordRequired.text();
+            let mut prompt = OsString::from(channel.protocol.sequence(&title, &body));
             prompt.push(env::var_os("SUDO_PROMPT").unwrap_or_else(|| "Password: ".into()));
             command.env("SUDO_PROMPT", prompt);
         }
@@ -161,26 +178,39 @@ mod tests {
     #[test]
     fn sequences_follow_each_terminals_protocol() {
         assert_eq!(
-            Protocol::Osc777.sequence("Done"),
-            "\x1b]777;notify;buu;Done\x07"
+            Protocol::Osc777.sequence("All done", "Finished."),
+            "\x1b]777;notify;All done;Finished.\x07"
         );
-        assert_eq!(Protocol::Osc9.sequence("Done"), "\x1b]9;buu: Done\x07");
+        assert_eq!(
+            Protocol::Osc9.sequence("All done", "Finished."),
+            "\x1b]9;buu: All done. Finished.\x07"
+        );
     }
 
     #[test]
     fn notification_text_cannot_escape_the_payload() {
         for protocol in [Protocol::Osc777, Protocol::Osc9] {
-            let sequence = protocol.sequence("Done\x07\x1b;\n");
-            assert!(sequence.ends_with("Done\x07"));
+            let sequence = protocol.sequence("Done\x07\x1b;\n", "Body\x07\x1b;\n");
+            assert!(sequence.ends_with("Body\x07"));
             assert_eq!(sequence.matches('\x07').count(), 1);
             assert_eq!(sequence.matches('\x1b').count(), 1);
         }
+        let osc777 = Protocol::Osc777.sequence("a;b", "c;d");
+        assert_eq!(osc777.matches(';').count(), 3);
     }
 
     #[test]
-    fn message_text_names_the_failed_step() {
-        assert_eq!(Message::Done.text(), "Done");
-        assert_eq!(Message::Failed("upgrade").text(), "Failed: upgrade");
-        assert_eq!(Message::PasswordRequired.text(), "Password required");
+    fn messages_have_a_headline_and_a_body_and_do_not_repeat_the_app_name() {
+        for (message, title) in [
+            (Message::Done, "All done"),
+            (Message::Failed("upgrade"), "Homebrew upgrade failed"),
+            (Message::PasswordRequired, "Password required"),
+        ] {
+            let (actual, body) = message.text();
+            assert_eq!(actual, title);
+            assert!(!body.is_empty());
+            assert!(!actual.to_lowercase().contains("buu"));
+            assert!(!body.to_lowercase().contains("buu"));
+        }
     }
 }

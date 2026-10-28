@@ -37,17 +37,18 @@ with status 1.
 
 ### Notifications
 
-In a supported terminal, buu sends a desktop notification titled **buu**:
+In a supported terminal, buu sends a desktop notification:
 
-- **Done**: every step completed.
-- **Failed: _step_**: a step failed, for example `Failed: upgrade`. Details
-  stay in the terminal.
+- **Done** ("All done"): every step completed.
+- **Failed** (for example "Homebrew upgrade failed"): a step failed, and the
+  notification names it. Details stay in the terminal.
 - **Password required**: sudo is waiting for your password.
 
 Supported terminals are [Ghostty](https://ghostty.org), WezTerm and iTerm2.
 Ghostty is the one buu is tested in; WezTerm and iTerm2 use their own
 notification escape sequences. iTerm2 has no notification titles, so it shows
-`buu:` in front of the text. Notifications are skipped in other terminals
+`buu:` in front of the text, while Ghostty shows the tab title (`buu` while buu
+runs) under the headline. Notifications are skipped in other terminals
 (including inside tmux or over SSH) and when both stdout and stderr are
 redirected. A failure to send one never changes the exit status.
 

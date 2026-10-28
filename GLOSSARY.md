@@ -13,7 +13,7 @@ One of the three fixed stages of a run: Update, Upgrade, Cleanup. A run always p
 _Avoid_: Phase, task, stage
 
 **Notification**:
-A desktop message titled `buu` that tells the user something about a run while they may be looking elsewhere.
+A desktop message that tells the user something about a run while they may be looking elsewhere.
 _Avoid_: Alert, banner, toast
 
 **Done**:

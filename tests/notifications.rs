@@ -9,11 +9,12 @@ use std::time::Duration;
 
 use common::{Fixture, text};
 
-const DONE: &str = "\x1b]777;notify;buu;Done\x07";
-const PASSWORD: &str = "\x1b]777;notify;buu;Password required\x07";
+const DONE: &str = "\x1b]777;notify;All done;Homebrew is updated, upgraded and cleaned up.\x07";
+const PASSWORD: &str =
+    "\x1b]777;notify;Password required;Homebrew is waiting for your password.\x07";
 
 fn failed(step: &str) -> String {
-    format!("\x1b]777;notify;buu;Failed: {step}\x07")
+    format!("\x1b]777;notify;Homebrew {step} failed;Check the terminal for details.\x07")
 }
 
 /// buu run against the fake brew, as Ghostty. With `terminal`, buu's output
@@ -45,7 +46,7 @@ fn success_sends_one_done_notification() {
     );
     let text = text(&output);
     assert_eq!(text.matches(DONE).count(), 1);
-    assert!(!text.contains("notify;buu;Failed"));
+    assert_eq!(text.matches("\x1b]777;").count(), 1);
     assert!(!text.contains(PASSWORD));
 }
 
@@ -65,7 +66,7 @@ fn each_failure_sends_one_notification_naming_the_step() {
         assert!(!output.status.success(), "{failing}");
         let text = text(&output);
         assert_eq!(text.matches(&failed(step)).count(), 1, "{failing}");
-        assert_eq!(text.matches("notify;buu;Failed").count(), 1, "{failing}");
+        assert_eq!(text.matches("\x1b]777;").count(), 1, "{failing}");
         assert!(!text.contains(DONE), "{failing}");
         assert!(text.contains("brew test failure"), "{failing}");
     }
@@ -75,7 +76,11 @@ fn each_failure_sends_one_notification_naming_the_step() {
 fn each_supported_terminal_gets_its_own_sequence() {
     for (term_program, term, done) in [
         ("WezTerm", "xterm-256color", DONE),
-        ("iTerm.app", "xterm-256color", "\x1b]9;buu: Done\x07"),
+        (
+            "iTerm.app",
+            "xterm-256color",
+            "\x1b]9;buu: All done. Homebrew is updated, upgraded and cleaned up.\x07",
+        ),
     ] {
         let fixture = Fixture::new();
         let output = command(&fixture, true)
