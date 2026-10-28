@@ -5,11 +5,12 @@
 ## Features
 
 - Single command to maintain Homebrew
-- Colored, human-friendly output
+- Colored, human-friendly output that appears as Homebrew works
+- Desktop notifications when a run finishes, fails, or needs your password
 
 ## Installation
 
-Install via Homebrew:
+buu supports macOS. Install via Homebrew:
 
 ```
 brew tap mhmdxsadk/tools
@@ -27,8 +28,41 @@ buu
 What it does:
 
 1. **Update** Homebrew
-2. **Upgrade** outdated packages (formulae + casks)
+2. **Upgrade** outdated packages (formulae + casks that Homebrew considers outdated)
 3. **Clean up** old artifacts
+
+The steps always run in this order. To run just one of them, use the matching
+`brew` command. If a step fails, buu shows Homebrew's output, stops, and exits
+with status 1.
+
+### Notifications
+
+In a supported terminal, buu sends a desktop notification titled **buu**:
+
+- **Done**: every step completed.
+- **Failed: _step_**: a step failed, for example `Failed: upgrade`. Details
+  stay in the terminal.
+- **Password required**: sudo is waiting for your password.
+
+Supported terminals are [Ghostty](https://ghostty.org), WezTerm and iTerm2.
+Ghostty is the one buu is tested in; WezTerm and iTerm2 use their own
+notification escape sequences. iTerm2 has no notification titles, so it shows
+`buu:` in front of the text. Notifications are skipped in other terminals
+(including inside tmux or over SSH) and when both stdout and stderr are
+redirected. A failure to send one never changes the exit status.
+
+The password notification is attached to sudo's own prompt, so it appears only
+when sudo really asks, never for cached credentials. buu does not read or store
+your password, and it keeps an existing `SUDO_PROMPT`. It is not sent when
+`SUDO_ASKPASS` points at a graphical helper, or when
+`HOMEBREW_SUDO_THROUGH_SUDO_USER` is set, because Homebrew then replaces sudo's
+prompt.
+
+There is no flag to turn notifications off. To silence them, use your
+terminal's or macOS's settings. In Ghostty, set `desktop-notifications = false`;
+on macOS, allow or block the terminal under System Settings → Notifications.
+Terminals may hide banners while their window is focused, and macOS Focus modes
+can hide them too.
 
 ## Example Output
 

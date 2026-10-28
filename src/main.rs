@@ -7,6 +7,9 @@ use anyhow::Context;
 use clap::Parser;
 use owo_colors::OwoColorize;
 
+mod notifications;
+use notifications::{Message, Notifications};
+
 type Result<T> = anyhow::Result<T>;
 
 #[derive(Copy, Clone)]
@@ -33,11 +36,11 @@ impl BrewStep {
         }
     }
 
-    fn run(self) -> Result<()> {
+    fn run(self, notifications: &Notifications) -> Result<()> {
         match self {
-            BrewStep::Update => run_update(),
-            BrewStep::Upgrade => run_upgrade(),
-            BrewStep::Cleanup => run_cleanup(),
+            BrewStep::Update => run_update(notifications),
+            BrewStep::Upgrade => run_upgrade(notifications),
+            BrewStep::Cleanup => run_cleanup(notifications),
         }
     }
 
@@ -63,18 +66,26 @@ struct Cli {}
 fn main() -> Result<()> {
     let _cli = Cli::parse();
 
-    run()
+    let notifications = Notifications::new();
+    let result = run(&notifications);
+    if result.is_ok() {
+        notifications.send(Message::Done);
+    }
+
+    result
 }
 
-fn run() -> Result<()> {
+fn run(notifications: &Notifications) -> Result<()> {
     let steps = [BrewStep::Update, BrewStep::Upgrade, BrewStep::Cleanup];
 
     let total = steps.len();
 
     for (idx, step) in steps.iter().copied().enumerate() {
         print_step_header(idx + 1, total, step.label());
-        step.run()
-            .with_context(|| format!("Homebrew {} failed", step.name()))?;
+        if let Err(error) = step.run(notifications) {
+            notifications.send(Message::Failed(step.name()));
+            return Err(error.context(format!("Homebrew {} failed", step.name())));
+        }
         println!();
     }
 
@@ -100,27 +111,25 @@ fn print_stderr_block(block: &str) {
     }
 }
 
-fn brew() -> Command {
-    let mut command = Command::new("brew");
-    command.stdin(Stdio::inherit());
-    command
+fn run_update(notifications: &Notifications) -> Result<()> {
+    stream(BrewStep::Update, notifications.brew_command().arg("update"))
 }
 
-fn run_update() -> Result<()> {
-    stream(BrewStep::Update, brew().arg("update"))
-}
-
-fn run_upgrade() -> Result<()> {
-    if !detect_outdated()? {
+fn run_upgrade(notifications: &Notifications) -> Result<()> {
+    if !detect_outdated(notifications)? {
         print_no_changes();
         return Ok(());
     }
 
-    stream(BrewStep::Upgrade, brew().arg("upgrade"))
+    stream(
+        BrewStep::Upgrade,
+        notifications.brew_command().arg("upgrade"),
+    )
 }
 
-fn detect_outdated() -> Result<bool> {
-    let output = brew()
+fn detect_outdated(notifications: &Notifications) -> Result<bool> {
+    let output = notifications
+        .brew_command()
         .env("HOMEBREW_NO_AUTO_UPDATE", "1")
         .args(["outdated", "--quiet"])
         .output()?;
@@ -134,8 +143,11 @@ fn detect_outdated() -> Result<bool> {
     Ok(!stdout.trim().is_empty())
 }
 
-fn run_cleanup() -> Result<()> {
-    stream(BrewStep::Cleanup, brew().args(["cleanup", "-s"]))
+fn run_cleanup(notifications: &Notifications) -> Result<()> {
+    stream(
+        BrewStep::Cleanup,
+        notifications.brew_command().args(["cleanup", "-s"]),
+    )
 }
 
 /// Runs a brew command, printing its tidied output as it arrives.
