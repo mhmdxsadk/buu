@@ -3,6 +3,5 @@ debug/
 release/
 
 **/*.rs.bk
-Cargo.lock
 
 .DS_Store
