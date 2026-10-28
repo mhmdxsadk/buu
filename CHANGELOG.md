@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/mhmdxsadk/buu/compare/v1.1.0...v1.1.1) (2026-10-28)
+
+
+### Bug Fixes
+
+* **notify:** give notifications a headline instead of repeating buu ([85dd227](https://github.com/mhmdxsadk/buu/commit/85dd22721744ff3b027d215ad08baf02d97b23fc))
+
 ## [1.1.0](https://github.com/mhmdxsadk/buu/compare/v1.0.3...v1.1.0) (2026-10-28)
 
 
