@@ -1,6 +1,6 @@
-use std::process::Command;
-use owo_colors::OwoColorize;
 use clap::Parser;
+use owo_colors::OwoColorize;
+use std::process::Command;
 
 type Result<T> = anyhow::Result<T>;
 
@@ -30,17 +30,17 @@ impl BrewStep {
 }
 
 #[derive(Parser)]
-#[command(name = "buu", version, about = "Update, upgrade, and clean Homebrew in one command.")]
+#[command(
+    name = "buu",
+    version,
+    about = "Update, upgrade, and clean Homebrew in one command."
+)]
 struct Cli {}
 
 fn main() -> Result<()> {
     let _cli = Cli::parse();
 
-    let steps = [
-        BrewStep::Update,
-        BrewStep::Upgrade,
-        BrewStep::Cleanup,
-    ];
+    let steps = [BrewStep::Update, BrewStep::Upgrade, BrewStep::Cleanup];
 
     let total = steps.len();
 
@@ -79,9 +79,7 @@ fn print_stderr_block(block: &str) {
 }
 
 fn run_update() -> Result<()> {
-    let output = Command::new("brew")
-        .arg("update")
-        .output()?;
+    let output = Command::new("brew").arg("update").output()?;
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
@@ -116,9 +114,7 @@ fn run_upgrade() -> Result<()> {
         return Ok(());
     }
 
-    let output = Command::new("brew")
-        .arg("upgrade")
-        .output()?;
+    let output = Command::new("brew").arg("upgrade").output()?;
 
     if !output.status.success() {
         anyhow::bail!("brew upgrade failed with status {}", output.status);
@@ -152,9 +148,7 @@ fn detect_outdated() -> Result<bool> {
 }
 
 fn run_cleanup() -> Result<()> {
-    let output = Command::new("brew")
-        .args(["cleanup", "-s"])
-        .output()?;
+    let output = Command::new("brew").args(["cleanup", "-s"]).output()?;
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
