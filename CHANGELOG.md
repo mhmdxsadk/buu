@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/mhmdxsadk/buu/compare/v1.1.1...v1.1.2) (2026-10-29)
+
+
+### Bug Fixes
+
+* **notify:** show success as one line ([bb11891](https://github.com/mhmdxsadk/buu/commit/bb11891b0b893abd25f54bc94aafd4207aedef26))
+
 ## [1.1.1](https://github.com/mhmdxsadk/buu/compare/v1.1.0...v1.1.1) (2026-10-28)
 
 
