@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/mhmdxsadk/buu/compare/v1.1.2...v1.1.3) (2026-10-29)
+
+
+### Bug Fixes
+
+* **notify:** put the success message under the tab title ([6fa75da](https://github.com/mhmdxsadk/buu/commit/6fa75da050dd7ca55617872c2739d8ddbccb1507))
+
 ## [1.1.2](https://github.com/mhmdxsadk/buu/compare/v1.1.1...v1.1.2) (2026-10-29)
 
 
