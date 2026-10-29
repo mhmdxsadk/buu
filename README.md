@@ -39,7 +39,7 @@ with status 1.
 
 In a supported terminal, buu sends a desktop notification:
 
-- **Done** ("All done"): every step completed.
+- **Done** ("Homebrew is up to date"): every step completed.
 - **Failed** (for example "Homebrew upgrade failed"): a step failed, and the
   notification names it. Details stay in the terminal.
 - **Password required**: sudo is waiting for your password.

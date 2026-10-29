@@ -11,16 +11,13 @@ pub enum Message {
 }
 
 impl Message {
-    /// The notification's headline and its message.
+    /// The notification's headline and its message, which may be empty.
     ///
     /// Neither says "buu": terminals such as Ghostty already show the tab
-    /// title, which is "buu" while buu runs.
+    /// title, which is "buu" while buu runs. Success is a single line.
     fn text(&self) -> (String, String) {
         match self {
-            Message::Done => (
-                "All done".to_string(),
-                "Homebrew is updated, upgraded and cleaned up.".to_string(),
-            ),
+            Message::Done => ("Homebrew is up to date".to_string(), String::new()),
             Message::Failed(step) => (
                 format!("Homebrew {step} failed"),
                 "Check the terminal for details.".to_string(),
@@ -81,6 +78,7 @@ impl Protocol {
         match self {
             Protocol::Osc777 => format!("\x1b]777;notify;{title};{body}\x07"),
             // iTerm2 shows no title of its own, so say who is speaking.
+            Protocol::Osc9 if body.is_empty() => format!("\x1b]9;buu: {title}\x07"),
             Protocol::Osc9 => format!("\x1b]9;buu: {title}. {body}\x07"),
         }
     }
@@ -178,6 +176,14 @@ mod tests {
     #[test]
     fn sequences_follow_each_terminals_protocol() {
         assert_eq!(
+            Protocol::Osc777.sequence("All done", ""),
+            "\x1b]777;notify;All done;\x07"
+        );
+        assert_eq!(
+            Protocol::Osc9.sequence("All done", ""),
+            "\x1b]9;buu: All done\x07"
+        );
+        assert_eq!(
             Protocol::Osc777.sequence("All done", "Finished."),
             "\x1b]777;notify;All done;Finished.\x07"
         );
@@ -200,15 +206,15 @@ mod tests {
     }
 
     #[test]
-    fn messages_have_a_headline_and_a_body_and_do_not_repeat_the_app_name() {
-        for (message, title) in [
-            (Message::Done, "All done"),
-            (Message::Failed("upgrade"), "Homebrew upgrade failed"),
-            (Message::PasswordRequired, "Password required"),
+    fn messages_have_a_headline_and_do_not_repeat_the_app_name() {
+        for (message, title, has_body) in [
+            (Message::Done, "Homebrew is up to date", false),
+            (Message::Failed("upgrade"), "Homebrew upgrade failed", true),
+            (Message::PasswordRequired, "Password required", true),
         ] {
             let (actual, body) = message.text();
             assert_eq!(actual, title);
-            assert!(!body.is_empty());
+            assert_eq!(!body.is_empty(), has_body);
             assert!(!actual.to_lowercase().contains("buu"));
             assert!(!body.to_lowercase().contains("buu"));
         }

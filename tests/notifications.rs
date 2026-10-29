@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use common::{Fixture, text};
 
-const DONE: &str = "\x1b]777;notify;All done;Homebrew is updated, upgraded and cleaned up.\x07";
+const DONE: &str = "\x1b]777;notify;Homebrew is up to date;\x07";
 const PASSWORD: &str =
     "\x1b]777;notify;Password required;Homebrew is waiting for your password.\x07";
 
@@ -79,7 +79,7 @@ fn each_supported_terminal_gets_its_own_sequence() {
         (
             "iTerm.app",
             "xterm-256color",
-            "\x1b]9;buu: All done. Homebrew is updated, upgraded and cleaned up.\x07",
+            "\x1b]9;buu: Homebrew is up to date\x07",
         ),
     ] {
         let fixture = Fixture::new();
