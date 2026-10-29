@@ -11,13 +11,15 @@ pub enum Message {
 }
 
 impl Message {
-    /// The notification's headline and its message, which may be empty.
+    /// The notification's headline and its message, either of which may be empty.
     ///
     /// Neither says "buu": terminals such as Ghostty already show the tab
-    /// title, which is "buu" while buu runs. Success is a single line.
+    /// title, which is "buu" while buu runs, between the headline and the
+    /// message. Success has no headline, so that title reads as the headline
+    /// and the message is the single line under it.
     fn text(&self) -> (String, String) {
         match self {
-            Message::Done => ("Homebrew is up to date".to_string(), String::new()),
+            Message::Done => (String::new(), "Homebrew is up to date".to_string()),
             Message::Failed(step) => (
                 format!("Homebrew {step} failed"),
                 "Check the terminal for details.".to_string(),
@@ -78,8 +80,13 @@ impl Protocol {
         match self {
             Protocol::Osc777 => format!("\x1b]777;notify;{title};{body}\x07"),
             // iTerm2 shows no title of its own, so say who is speaking.
-            Protocol::Osc9 if body.is_empty() => format!("\x1b]9;buu: {title}\x07"),
-            Protocol::Osc9 => format!("\x1b]9;buu: {title}. {body}\x07"),
+            Protocol::Osc9 => {
+                let text: Vec<&str> = [title.as_str(), body.as_str()]
+                    .into_iter()
+                    .filter(|part| !part.is_empty())
+                    .collect();
+                format!("\x1b]9;buu: {}\x07", text.join(". "))
+            }
         }
     }
 }
@@ -176,12 +183,12 @@ mod tests {
     #[test]
     fn sequences_follow_each_terminals_protocol() {
         assert_eq!(
-            Protocol::Osc777.sequence("All done", ""),
-            "\x1b]777;notify;All done;\x07"
+            Protocol::Osc777.sequence("", "Finished."),
+            "\x1b]777;notify;;Finished.\x07"
         );
         assert_eq!(
-            Protocol::Osc9.sequence("All done", ""),
-            "\x1b]9;buu: All done\x07"
+            Protocol::Osc9.sequence("", "Finished."),
+            "\x1b]9;buu: Finished.\x07"
         );
         assert_eq!(
             Protocol::Osc777.sequence("All done", "Finished."),
@@ -206,15 +213,24 @@ mod tests {
     }
 
     #[test]
-    fn messages_have_a_headline_and_do_not_repeat_the_app_name() {
-        for (message, title, has_body) in [
-            (Message::Done, "Homebrew is up to date", false),
-            (Message::Failed("upgrade"), "Homebrew upgrade failed", true),
-            (Message::PasswordRequired, "Password required", true),
+    fn messages_do_not_repeat_the_app_name() {
+        for (message, title, body) in [
+            (Message::Done, "", "Homebrew is up to date"),
+            (
+                Message::Failed("upgrade"),
+                "Homebrew upgrade failed",
+                "Check the terminal for details.",
+            ),
+            (
+                Message::PasswordRequired,
+                "Password required",
+                "Homebrew is waiting for your password.",
+            ),
         ] {
-            let (actual, body) = message.text();
+            let (actual, body_actual) = message.text();
             assert_eq!(actual, title);
-            assert_eq!(!body.is_empty(), has_body);
+            assert_eq!(body_actual, body);
+            let body = body_actual;
             assert!(!actual.to_lowercase().contains("buu"));
             assert!(!body.to_lowercase().contains("buu"));
         }

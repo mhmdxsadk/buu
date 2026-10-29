@@ -48,9 +48,10 @@ Supported terminals are [Ghostty](https://ghostty.org), WezTerm and iTerm2.
 Ghostty is the one buu is tested in; WezTerm and iTerm2 use their own
 notification escape sequences. iTerm2 has no notification titles, so it shows
 `buu:` in front of the text, while Ghostty shows the tab title (`buu` while buu
-runs) under the headline. Notifications are skipped in other terminals
-(including inside tmux or over SSH) and when both stdout and stderr are
-redirected. A failure to send one never changes the exit status.
+runs) under the headline. Done has no headline, so `buu` is its top line.
+Notifications are skipped in other terminals (including inside tmux or over
+SSH) and when both stdout and stderr are redirected. A failure to send one never
+changes the exit status.
 
 The password notification is attached to sudo's own prompt, so it appears only
 when sudo really asks, never for cached credentials. buu does not read or store

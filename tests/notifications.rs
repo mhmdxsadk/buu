@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use common::{Fixture, text};
 
-const DONE: &str = "\x1b]777;notify;Homebrew is up to date;\x07";
+const DONE: &str = "\x1b]777;notify;;Homebrew is up to date\x07";
 const PASSWORD: &str =
     "\x1b]777;notify;Password required;Homebrew is waiting for your password.\x07";
 
