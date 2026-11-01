@@ -9,12 +9,13 @@ use std::time::Duration;
 
 use common::{Fixture, text};
 
-const DONE: &str = "\x1b]777;notify;;Homebrew is up to date\x07";
-const PASSWORD: &str =
-    "\x1b]777;notify;Password required;Homebrew is waiting for your password.\x07";
+/// Ghostty shows the tab title under the notification title, so Done sets the
+/// tab title to the message and sends "buu" as the title.
+const DONE: &str = "\x1b]2;Homebrew is up to date\x07\x1b]777;notify;BUU;\x07";
+const PASSWORD: &str = "\x1b]777;notify;BUU: Password required.;\x07";
 
 fn failed(step: &str) -> String {
-    format!("\x1b]777;notify;Homebrew {step} failed;Check the terminal for details.\x07")
+    format!("\x1b]2;{step} failed. Check the terminal for details.\x07\x1b]777;notify;BUU;\x07")
 }
 
 /// buu run against the fake brew, as Ghostty. With `terminal`, buu's output
@@ -48,15 +49,17 @@ fn success_sends_one_done_notification() {
     assert_eq!(text.matches(DONE).count(), 1);
     assert_eq!(text.matches("\x1b]777;").count(), 1);
     assert!(!text.contains(PASSWORD));
+    // Ghostty's banner subtitle is emptied once, before any brew command.
+    assert_eq!(text.matches("\x1b]7;\x07\x1b]2;\x07").count(), 1);
 }
 
 #[test]
 fn each_failure_sends_one_notification_naming_the_step() {
     for (failing, step) in [
-        ("update", "update"),
-        ("outdated", "upgrade"),
-        ("upgrade", "upgrade"),
-        ("cleanup", "cleanup"),
+        ("update", "Update"),
+        ("outdated", "Upgrade"),
+        ("upgrade", "Upgrade"),
+        ("cleanup", "Cleanup"),
     ] {
         let fixture = Fixture::new();
         let output = command(&fixture, true)
@@ -75,7 +78,11 @@ fn each_failure_sends_one_notification_naming_the_step() {
 #[test]
 fn each_supported_terminal_gets_its_own_sequence() {
     for (term_program, term, done) in [
-        ("WezTerm", "xterm-256color", DONE),
+        (
+            "WezTerm",
+            "xterm-256color",
+            "\x1b]777;notify;Homebrew is up to date;\x07",
+        ),
         (
             "iTerm.app",
             "xterm-256color",

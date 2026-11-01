@@ -40,15 +40,20 @@ with status 1.
 In a supported terminal, buu sends a desktop notification:
 
 - **Done** ("Homebrew is up to date"): every step completed.
-- **Failed** (for example "Homebrew upgrade failed"): a step failed, and the
-  notification names it. Details stay in the terminal.
+- **Failed** (for example "Upgrade failed. Check the terminal for details."): a
+  step failed, and the notification names it. Details stay in the terminal.
 - **Password required**: sudo is waiting for your password.
 
 Supported terminals are [Ghostty](https://ghostty.org), WezTerm and iTerm2.
 Ghostty is the one buu is tested in; WezTerm and iTerm2 use their own
 notification escape sequences. iTerm2 has no notification titles, so it shows
-`buu:` in front of the text, while Ghostty shows the tab title (`buu` while buu
-runs) under the headline. Done has no headline, so `buu` is its top line.
+`buu:` in front of the text. Ghostty always shows the tab title as a line under
+the notification title, so buu sends `BUU` as the title and puts the message in
+the tab title, which Ghostty shows in regular weight. The password notification
+is part of sudo's prompt and cannot change the tab title in time, so buu empties
+the tab title (and Ghostty's remembered directory) when the run starts, and the
+banner is a bold "BUU: Password required." with nothing under it. The tab title
+and directory come back at your shell's next prompt.
 Notifications are skipped in other terminals (including inside tmux or over
 SSH) and when both stdout and stderr are redirected. A failure to send one never
 changes the exit status.

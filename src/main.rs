@@ -67,6 +67,7 @@ fn main() -> Result<()> {
     let _cli = Cli::parse();
 
     let notifications = Notifications::new();
+    notifications.begin();
     let result = run(&notifications);
     if result.is_ok() {
         notifications.send(Message::Done);
