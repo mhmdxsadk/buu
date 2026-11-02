@@ -43,8 +43,12 @@ buu sends a desktop notification when:
 - a step fails
 - sudo asks for your password
 
-Notifications work only in [Ghostty](https://ghostty.org). To turn them off, set
-`desktop-notifications = false` in Ghostty.
+Notifications work only in [Ghostty](https://ghostty.org).
+To turn them off, set `BUU_NO_NOTIFY=1`, in your `~/.zshrc` config file.
+
+```
+export BUU_NO_NOTIFY=1
+```
 
 ## Example Output
 

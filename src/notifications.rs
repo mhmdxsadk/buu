@@ -57,8 +57,8 @@ fn sentences(title: &str, body: &str) -> String {
 
 /// Desktop notifications, sent as escape sequences to Ghostty.
 ///
-/// Does nothing unless the terminal is Ghostty and stdout or stderr is
-/// attached to it.
+/// Does nothing unless the terminal is Ghostty, stdout or stderr is attached
+/// to it, and `BUU_NO_NOTIFY` is unset or empty.
 ///
 /// Ghostty always adds the tab title as a second line, regular weight when
 /// the body is empty, so buu sends "BUU" as the title with no body and puts
@@ -131,7 +131,8 @@ impl Notifications {
             env::var("TERM_PROGRAM").ok().as_deref(),
             env::var("TERM").ok().as_deref(),
         );
-        let stream = if !ghostty {
+        let disabled = env::var_os("BUU_NO_NOTIFY").is_some_and(|value| !value.is_empty());
+        let stream = if !ghostty || disabled {
             None
         } else if io::stderr().is_terminal() {
             Some(Stream::Stderr)

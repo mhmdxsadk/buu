@@ -85,6 +85,30 @@ fn redirected_output_skips_notifications() {
 }
 
 #[test]
+fn buu_no_notify_skips_notifications() {
+    let fixture = Fixture::new();
+    let output = command(&fixture, true)
+        .env("BUU_NO_NOTIFY", "1")
+        .env("SUDO_PROMPT", "Password: ")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert!(!text(&output).contains("\x1b]777;"));
+    assert_eq!(fixture.read("prompt-upgrade"), "Password: ");
+}
+
+#[test]
+fn empty_buu_no_notify_keeps_notifications() {
+    let fixture = Fixture::new();
+    let output = command(&fixture, true)
+        .env("BUU_NO_NOTIFY", "")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert_eq!(text(&output).matches(DONE).count(), 1);
+}
+
+#[test]
 fn other_terminals_get_no_notifications() {
     for term_program in ["Apple_Terminal", "WezTerm", "iTerm.app"] {
         let fixture = Fixture::new();
