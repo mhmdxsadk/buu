@@ -76,46 +76,28 @@ fn each_failure_sends_one_notification_naming_the_step() {
 }
 
 #[test]
-fn each_supported_terminal_gets_its_own_sequence() {
-    for (term_program, term, done) in [
-        (
-            "WezTerm",
-            "xterm-256color",
-            "\x1b]777;notify;Homebrew is up to date;\x07",
-        ),
-        (
-            "iTerm.app",
-            "xterm-256color",
-            "\x1b]9;buu: Homebrew is up to date\x07",
-        ),
-    ] {
-        let fixture = Fixture::new();
-        let output = command(&fixture, true)
-            .env("TERM_PROGRAM", term_program)
-            .env("TERM", term)
-            .output()
-            .unwrap();
-        assert!(output.status.success(), "{term_program}");
-        assert_eq!(text(&output).matches(done).count(), 1, "{term_program}");
-    }
+fn redirected_output_skips_notifications() {
+    let fixture = Fixture::new();
+    let output = command(&fixture, false).output().unwrap();
+    assert!(output.status.success());
+    assert!(!text(&output).contains("\x1b]777;"));
+    assert_eq!(fixture.read("prompt-update"), "unset");
 }
 
 #[test]
-fn redirected_output_and_other_terminals_skip_notifications() {
-    for terminal in [false, true] {
+fn other_terminals_get_no_notifications() {
+    for term_program in ["Apple_Terminal", "WezTerm", "iTerm.app"] {
         let fixture = Fixture::new();
-        let mut command = command(&fixture, terminal);
-        if terminal {
-            command
-                .env("TERM_PROGRAM", "Apple_Terminal")
-                .env("TERM", "xterm-256color");
-        }
-        let output = command.output().unwrap();
-        assert!(output.status.success());
+        let output = command(&fixture, true)
+            .env("TERM_PROGRAM", term_program)
+            .env("TERM", "xterm-256color")
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{term_program}");
         let text = text(&output);
-        assert!(!text.contains("\x1b]777;"));
-        assert!(!text.contains("\x1b]9;"));
-        assert_eq!(fixture.read("prompt-update"), "unset");
+        assert!(!text.contains("\x1b]777;"), "{term_program}");
+        assert!(!text.contains("\x1b]9;"), "{term_program}");
+        assert_eq!(fixture.read("prompt-update"), "unset", "{term_program}");
     }
 }
 

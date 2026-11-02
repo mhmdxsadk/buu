@@ -6,7 +6,7 @@
 
 - Single command to maintain Homebrew
 - Colored, human-friendly output that appears as Homebrew works
-- Desktop notifications when a run finishes, fails, or needs your password
+- Desktop notifications in Ghostty when a run finishes, fails, or needs your password
 
 ## Installation
 
@@ -37,39 +37,14 @@ with status 1.
 
 ### Notifications
 
-In a supported terminal, buu sends a desktop notification:
+buu sends a desktop notification when:
 
-- **Done** ("Homebrew is up to date"): every step completed.
-- **Failed** (for example "Upgrade failed. Check the terminal for details."): a
-  step failed, and the notification names it. Details stay in the terminal.
-- **Password required**: sudo is waiting for your password.
+- a run finishes
+- a step fails
+- sudo asks for your password
 
-Supported terminals are [Ghostty](https://ghostty.org), WezTerm and iTerm2.
-Ghostty is the one buu is tested in; WezTerm and iTerm2 use their own
-notification escape sequences. iTerm2 has no notification titles, so it shows
-`buu:` in front of the text. Ghostty always shows the tab title as a line under
-the notification title, so buu sends `BUU` as the title and puts the message in
-the tab title, which Ghostty shows in regular weight. The password notification
-is part of sudo's prompt and cannot change the tab title in time, so buu empties
-the tab title (and Ghostty's remembered directory) when the run starts, and the
-banner is a bold "BUU: Password required." with nothing under it. The tab title
-and directory come back at your shell's next prompt.
-Notifications are skipped in other terminals (including inside tmux or over
-SSH) and when both stdout and stderr are redirected. A failure to send one never
-changes the exit status.
-
-The password notification is attached to sudo's own prompt, so it appears only
-when sudo really asks, never for cached credentials. buu does not read or store
-your password, and it keeps an existing `SUDO_PROMPT`. It is not sent when
-`SUDO_ASKPASS` points at a graphical helper, or when
-`HOMEBREW_SUDO_THROUGH_SUDO_USER` is set, because Homebrew then replaces sudo's
-prompt.
-
-There is no flag to turn notifications off. To silence them, use your
-terminal's or macOS's settings. In Ghostty, set `desktop-notifications = false`;
-on macOS, allow or block the terminal under System Settings → Notifications.
-Terminals may hide banners while their window is focused, and macOS Focus modes
-can hide them too.
+Notifications work only in [Ghostty](https://ghostty.org). To turn them off, set
+`desktop-notifications = false` in Ghostty.
 
 ## Example Output
 
