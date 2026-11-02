@@ -50,21 +50,6 @@ To turn them off, set `BUU_NO_NOTIFY=1`, in your `~/.zshrc` config file.
 export BUU_NO_NOTIFY=1
 ```
 
-## Example Output
-
-```
-[1/3] Updating Homebrew...
-    No changes.
-
-[2/3] Upgrading Homebrew...
-==> Upgrading 1 outdated package:
-opencode 1.0.147 -> 1.0.150
-...
-
-[3/3] Cleaning up...
-    No changes.
-```
-
 ## Why “buu”?
 
 I built this as an excuse to learn Rust.  
