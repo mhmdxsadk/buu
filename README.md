@@ -35,7 +35,7 @@ The steps always run in this order. To run just one of them, use the matching
 `brew` command. If a step fails, buu shows Homebrew's output, stops, and exits
 with status 1.
 
-### Notifications
+## Notifications
 
 buu sends a desktop notification when:
 
