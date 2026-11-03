@@ -52,8 +52,7 @@ export BUU_NO_NOTIFY=1
 
 ## Why “buu”?
 
-I built this as an excuse to learn Rust.  
-I know I could have pulled this off with a simple bash script — but where’s the fun in that?
+I built this as an excuse to use Rust. A bash script would have done the same job.
 
 ## License
 
