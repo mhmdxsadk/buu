@@ -11,11 +11,12 @@ use common::{Fixture, text};
 
 /// Ghostty shows the tab title under the notification title, so Done sets the
 /// tab title to the message and sends "buu" as the title.
-const DONE: &str = "\x1b]2;Homebrew is up to date\x07\x1b]777;notify;BUU;\x07";
-const PASSWORD: &str = "\x1b]777;notify;BUU: Password required.;\x07";
+const DONE: &str = "\x1b]2;Homebrew is up to date\x07\x1b]777;notify;BUU;\x07\x07";
+const GHOSTTY: &str = "com.mitchellh.ghostty";
+const PASSWORD: &str = "\x1b]777;notify;BUU: Password required.;\x07\x07";
 
 fn failed(step: &str) -> String {
-    format!("\x1b]2;{step} failed. Check the terminal for details.\x07\x1b]777;notify;BUU;\x07")
+    format!("\x1b]2;{step} failed. Check the terminal for details.\x07\x1b]777;notify;BUU;\x07\x07")
 }
 
 /// buu run against the fake brew, as Ghostty. With `terminal`, buu's output
@@ -32,7 +33,8 @@ fn command(fixture: &Fixture, terminal: bool) -> Command {
     fixture.configure(&mut command);
     command
         .env("TERM_PROGRAM", "ghostty")
-        .env("TERM", "xterm-ghostty");
+        .env("TERM", "xterm-ghostty")
+        .env("__CFBundleIdentifier", GHOSTTY);
     command
 }
 
@@ -73,6 +75,34 @@ fn each_failure_sends_one_notification_naming_the_step() {
         assert!(!text.contains(DONE), "{failing}");
         assert!(text.contains("brew test failure"), "{failing}");
     }
+}
+
+#[test]
+fn frontmost_ghostty_gets_the_bell_without_a_banner() {
+    let fixture = Fixture::new();
+    let output = command(&fixture, true)
+        .env("FRONT_BUNDLE_ID", GHOSTTY)
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let text = text(&output);
+    assert_eq!(
+        text.matches("\x1b]2;Homebrew is up to date\x07\x07")
+            .count(),
+        1
+    );
+    assert!(!text.contains("\x1b]777;"));
+}
+
+#[test]
+fn another_frontmost_app_gets_the_banner() {
+    let fixture = Fixture::new();
+    let output = command(&fixture, true)
+        .env("FRONT_BUNDLE_ID", "com.apple.Safari")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert_eq!(text(&output).matches(DONE).count(), 1);
 }
 
 #[test]

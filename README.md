@@ -44,7 +44,23 @@ buu sends a desktop notification when:
 - sudo asks for your password
 
 Notifications work only in [Ghostty](https://ghostty.org).
-To turn them off, set `BUU_NO_NOTIFY=1`, in your `~/.zshrc` config file:
+Each one also rings the terminal bell. If you are in another tab, Ghostty
+puts a 🔔 on the buu tab and bounces the Dock icon once. Both clear when you
+return to the tab. Ghostty plays no sound by default. To hear one, add this
+to your Ghostty config, using any sound file you like:
+
+```
+bell-features = no-system,audio
+bell-audio-path = /System/Library/Sounds/Ping.aiff
+```
+
+Without `audio`, `bell-features = system` plays the macOS alert sound instead.
+
+While Ghostty is the frontmost app, buu sends only the bell and no banner.
+If another app is in front, you get the banner too. The password notification
+always includes the banner, because buu cannot tell when sudo will ask.
+
+To turn all of it off, set `BUU_NO_NOTIFY=1`, in your `~/.zshrc` config file:
 
 ```
 export BUU_NO_NOTIFY=1

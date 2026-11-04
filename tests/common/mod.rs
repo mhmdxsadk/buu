@@ -7,6 +7,8 @@
 //! - `STREAM`: `upgrade` prints a line, waits for `release`, then prints a last line.
 //! - `ASK_PASSWORD`: `upgrade` writes sudo's prompt to the controlling terminal.
 //! - `WAIT_FOR_RELEASE`: with `ASK_PASSWORD`, wait for `release` after prompting.
+//! - `FRONT_BUNDLE_ID`: the bundle id a fake `lsappinfo` reports for the
+//!   frontmost app. Empty makes it fail, as if the app could not be found.
 #![allow(dead_code)]
 
 use std::fs;
@@ -61,6 +63,17 @@ exit 0
         )
         .unwrap();
         fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
+        let lsappinfo = dir.join("lsappinfo");
+        fs::write(
+            &lsappinfo,
+            r#"#!/bin/sh
+if [ -z "$FRONT_BUNDLE_ID" ]; then exit 1; fi
+if [ "$1" = front ]; then echo 'ASN:0x0-0x1:'; exit 0; fi
+printf ' [ NULL ]  ASN:0x0-0x1: (in front) \n    bundleID="%s"\n' "$FRONT_BUNDLE_ID"
+"#,
+        )
+        .unwrap();
+        fs::set_permissions(lsappinfo, fs::Permissions::from_mode(0o755)).unwrap();
         Self(dir)
     }
 
@@ -73,6 +86,7 @@ exit 0
             .env("STREAM", "0")
             .env("ASK_PASSWORD", "0")
             .env("WAIT_FOR_RELEASE", "0")
+            .env("FRONT_BUNDLE_ID", "")
             .env_remove("SUDO_PROMPT")
             .env_remove("SUDO_ASKPASS")
             .stdin(Stdio::null());

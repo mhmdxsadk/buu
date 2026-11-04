@@ -60,6 +60,12 @@ fn sentences(title: &str, body: &str) -> String {
 /// Does nothing unless the terminal is Ghostty, stdout or stderr is attached
 /// to it, and `BUU_NO_NOTIFY` is unset or empty.
 ///
+/// Each notification ends with a bell (`BELL`) so that Ghostty also marks the
+/// tab when the notification comes from a tab you are not looking at. While
+/// Ghostty is the frontmost app, that is all buu sends: no banner. The
+/// password notification cannot make that choice, because sudo prints its
+/// prompt later (see `prompt`), so it always includes the banner.
+///
 /// Ghostty always adds the tab title as a second line, regular weight when
 /// the body is empty, so buu sends "BUU" as the title with no body and puts
 /// the text in the tab title. The password notification cannot (see
@@ -85,13 +91,61 @@ fn is_ghostty(term_program: Option<&str>, term: Option<&str>) -> bool {
     term_program == Some("ghostty") || term == Some("xterm-ghostty")
 }
 
+const GHOSTTY_BUNDLE_ID: &str = "com.mitchellh.ghostty";
+
+/// Whether Ghostty is the app in front. macOS sets `__CFBundleIdentifier` for
+/// programs started from an app, which also covers other Ghostty builds.
+/// Anything buu cannot find out counts as "not in front", so the banner is
+/// sent.
+fn ghostty_is_frontmost() -> bool {
+    let own = env::var("__CFBundleIdentifier").unwrap_or_else(|_| GHOSTTY_BUNDLE_ID.to_string());
+    frontmost_bundle_id().is_some_and(|front| front == own)
+}
+
+fn frontmost_bundle_id() -> Option<String> {
+    let front = lsappinfo(&["front"])?;
+    let info = lsappinfo(&["info", "-only", "bundleid", front.trim()])?;
+    parse_bundle_id(&info)
+}
+
+fn lsappinfo(args: &[&str]) -> Option<String> {
+    let output = Command::new("lsappinfo")
+        .args(args)
+        .stdin(Stdio::null())
+        .stderr(Stdio::null())
+        .output()
+        .ok()?;
+    output
+        .status
+        .success()
+        .then(|| String::from_utf8_lossy(&output.stdout).into_owned())
+}
+
+/// Reads the `bundleID="..."` line of `lsappinfo info` output.
+fn parse_bundle_id(info: &str) -> Option<String> {
+    info.lines().find_map(|line| {
+        let id = line.trim().strip_prefix("bundleID=\"")?;
+        Some(id.strip_suffix('"')?.to_string())
+    })
+}
+
+/// Ghostty's in-app signal for a tab you are not looking at: a bell emoji on
+/// the tab title and one Dock bounce, both cleared when you return to the tab.
+/// Ghostty enables both by default (`bell-features`).
+const BELL: &str = "\x07";
+
 /// The notification in the order buu writes it, with a pause between the
 /// parts (see `write_notification`).
-fn sequences(title: &str, body: &str, plain: bool) -> Vec<String> {
-    vec![
-        tab_title(&ghostty_text(title, body, plain)),
-        "\x1b]777;notify;BUU;\x07".to_string(),
-    ]
+///
+/// With `banner` false, Ghostty is the frontmost app, so buu sends only the
+/// tab title and the bell.
+fn sequences(title: &str, body: &str, plain: bool, banner: bool) -> Vec<String> {
+    let tab_title = tab_title(&ghostty_text(title, body, plain));
+    if banner {
+        vec![tab_title, format!("\x1b]777;notify;BUU;\x07{BELL}")]
+    } else {
+        vec![format!("{tab_title}{BELL}")]
+    }
 }
 
 /// The notification as sudo's password prompt carries it: one write, with no
@@ -99,7 +153,7 @@ fn sequences(title: &str, body: &str, plain: bool) -> Vec<String> {
 /// title, and the empty tab title `begin` set leaves no line under it.
 fn prompt(title: &str, body: &str, plain: bool) -> String {
     format!(
-        "\x1b]777;notify;BUU: {};\x07",
+        "\x1b]777;notify;BUU: {};\x07{BELL}",
         clean(&ghostty_text(title, body, plain))
     )
 }
@@ -160,7 +214,11 @@ impl Notifications {
             return;
         };
         let (title, body) = message.text();
-        self.write(stream, &sequences(&title, &body, message.is_plain()));
+        let banner = !ghostty_is_frontmost();
+        self.write(
+            stream,
+            &sequences(&title, &body, message.is_plain(), banner),
+        );
     }
 
     fn write(&self, stream: Stream, sequences: &[String]) {
@@ -226,25 +284,44 @@ mod tests {
     #[test]
     fn the_text_goes_in_the_tab_title() {
         assert_eq!(
-            sequences("Finished", "", false),
-            ["\x1b]2;Finished\x07", "\x1b]777;notify;BUU;\x07"]
+            sequences("Finished", "", false, true),
+            ["\x1b]2;Finished\x07", "\x1b]777;notify;BUU;\x07\x07"]
         );
         assert_eq!(
-            sequences("Upgrade failed", "Check the terminal.", true),
+            sequences("Upgrade failed", "Check the terminal.", true, true),
             [
                 "\x1b]2;Upgrade failed. Check the terminal.\x07",
-                "\x1b]777;notify;BUU;\x07"
+                "\x1b]777;notify;BUU;\x07\x07"
             ]
         );
         assert_eq!(
             prompt("Password required", "", true),
-            "\x1b]777;notify;BUU: Password required.;\x07"
+            "\x1b]777;notify;BUU: Password required.;\x07\x07"
         );
     }
 
     #[test]
+    fn the_frontmost_ghostty_gets_only_the_tab_title_and_the_bell() {
+        assert_eq!(
+            sequences("Finished", "", false, false),
+            ["\x1b]2;Finished\x07\x07"]
+        );
+    }
+
+    #[test]
+    fn reads_the_bundle_id_from_lsappinfo() {
+        let info = " [ NULL ]  ASN:0x0-0x156cb6b6: (in front) \n    bundleID=\"com.mitchellh.ghostty\"\n    bundle path=[ NULL ] \n";
+        assert_eq!(
+            parse_bundle_id(info).as_deref(),
+            Some("com.mitchellh.ghostty")
+        );
+        assert_eq!(parse_bundle_id("bundleID=[ NULL ]"), None);
+        assert_eq!(parse_bundle_id(""), None);
+    }
+
+    #[test]
     fn ghostty_waits_for_the_tab_title_before_notifying() {
-        let sequences = sequences("Finished", "", false);
+        let sequences = sequences("Finished", "", false, true);
         assert_eq!(sequences.len(), 2);
         let mut written = Vec::new();
         let start = std::time::Instant::now();
@@ -256,12 +333,12 @@ mod tests {
     #[test]
     fn notification_text_cannot_escape_the_payload() {
         assert_eq!(
-            sequences("Done\x07\x1b;\n", "Body\x07\x1b;\n", false),
-            ["\x1b]2;Done\x07", "\x1b]777;notify;BUU;\x07"]
+            sequences("Done\x07\x1b;\n", "Body\x07\x1b;\n", false, true),
+            ["\x1b]2;Done\x07", "\x1b]777;notify;BUU;\x07\x07"]
         );
         assert_eq!(
             prompt("Done\x07\x1b;\n", "Body\x07\x1b;\n", true),
-            "\x1b]777;notify;BUU: Done. Body.;\x07"
+            "\x1b]777;notify;BUU: Done. Body.;\x07\x07"
         );
     }
 
