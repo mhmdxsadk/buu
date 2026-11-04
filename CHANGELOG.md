@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/mhmdxsadk/buu/compare/v1.1.3...v1.2.0) (2026-11-04)
+
+
+### Features
+
+* **notify:** add BUU_NO_NOTIFY opt-out ([87f23ae](https://github.com/mhmdxsadk/buu/commit/87f23ae4f95b201a3dffb766d6f469d839c7afe0))
+* **notify:** ring the terminal bell and skip the banner in Ghostty ([506ae1f](https://github.com/mhmdxsadk/buu/commit/506ae1fda7e45a6fc4139aad82db4a5415f5b019))
+
 ## [1.1.3](https://github.com/mhmdxsadk/buu/compare/v1.1.2...v1.1.3) (2026-10-29)
 
 
